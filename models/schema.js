@@ -17,10 +17,10 @@ module.exports = mongoose.model('user', userSchema, 'user');
 
 var prodSchema = new mongoose.Schema({
 
-    prodName : String,
+    prodName : String, 
     prodDesc : String,
     prodImage : String,
-    obj_id : String
+    user_id : String
 
 });
 
@@ -32,7 +32,7 @@ var reviewSchema = new mongoose.Schema({
 
     reviewMsg : Array,
     reviewDate : Date,
-    prodID : String
+    user_id : String
 
 });
 

@@ -16,7 +16,7 @@ route.post('/:uid',(req,res) => {
         var obj = new reviewSchema({
             reviewMsg : reviewMsg,
             reviewDate : new Date(),
-            prodID : req.params.uid
+            user_id : req.params.uid
             })
             obj.save(function(err){
                 if(err){
@@ -28,10 +28,10 @@ route.post('/:uid',(req,res) => {
                 else{
                     res.json({
                         sucess : true,
-                        message : "Reviews successfullly posted" 
+                        message : "Reviews successfullly posted", 
+                        data : obj
                     })
                 }
-                console.log('Reviews posted')
             })
     }
     catch(err)
@@ -43,7 +43,7 @@ route.post('/:uid',(req,res) => {
 
 route.get('/:prodid',(req,res)=>{
     const id = req.params.prodid;
-    reviewSchema.find({prodID : id},(err,data)=>{
+    reviewSchema.find({_id : prodID},(err,data)=>{
     if(err) throw err;
     res.send(data);
     })
