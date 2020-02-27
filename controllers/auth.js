@@ -1,86 +1,60 @@
-var express = require('express');
-var route = express.Router(); 
-var bodyParser = require ("body-parser");
-const app = express();
-app.use(bodyParser.text());
-var userSchema = require("../models/schema");
-var config = require('../config/config.json');
+const Bcrypt = require("bcryptjs");
+var db = require('../models/users');
 var jwt = require('jsonwebtoken');
-const bcrypt = require('bcryptjs');
+var config = require('../config/config.json');
+var mongoose = require('mongoose')
+
+exports.register = (req,res)=>{
+
+  var content = JSON.parse(req.body)
 
 
+  db.findOne({email: content.email}, function (err, docs) {
 
-
-//User registration
-
-route.post('/registration',(req,res) => {
-    var content = JSON.parse((req.body).toString())
-    var obj = new userSchema({
-    firstName : content.firstName,
-    lastName : content.lastName,
-    email : content.email,
-    password : content.password
-    });
-    var newobj = {
-        firstName : content.firstName,
-        lastName : content.lastName,
-        email : content.email
-    };
-    bcrypt.genSalt(10,(err,salt) =>{
-        bcrypt.hash(obj.password,salt,(err,hash)=>{
-            if(err) throw err;
-            obj.password = hash;
-            obj.save(function(err,userSchema){
-                if(err){
-                    res.json({
-                        sucess : false,
-                        message : "problem in user registration"
-                    })
-                }
-                else{
-                    res.json({
-                        sucess : true,
-                        message : "User registered successfullly ",
-                        data : newobj
-                    })
-                }
-            })
-        })
-    });
-})
-
-// User login
-
-route.post('/login',(req,res) => {
-    var content = JSON.parse((req.body).toString())
-    var reg = {
-        firstName : userSchema.firstName,
-        lastName : userSchema.lastName,
-        email : userSchema.email,
-        password : userSchema.password
-    }
-    userSchema.findOne({email : content.email},(err,data)=>{
-        if (!data) {
-            res.json({
-                sucess : false,
-                message : "problem in token genration",
-                data: data
-            })
-        }
-        else{
-            var token = jwt.sign({reg:data},config.key , { expiresIn: 60 * 60 });
-            console.log("here");
-                res.json({
-                    sucess : true,
-                    message : "Token genrated successfully",
-                    token: token
-                })
-
-            var decode = jwt.verify(token, config.key , function(err, decoded) {
-            console.log(decoded) 
-            });
-        }
+  if(!docs == null){
+    res.send({"success":false,"status":400,"message":'user already exist',"data":{}})
+     
+  }
+  else{
+    var obj = new db({
+      firstName: content.firstName,
+      lastName: content.lastName,
+      email: content.email,
+      password: Bcrypt.hashSync(content.password, 10)
     })
+    obj.save((err,data)=>{
+      if(!err){res.send({"success":true,"status":200,"message":'user registered',"data":data})}
+      else{res.send({"success":false,"status":400,"message":err,"data":obj})}
+    })
+  }
 })
 
-module.exports = route;
+}
+
+
+exports.tokengen = (req,res)=>{
+  var content = JSON.parse(req.body)
+  db.findOne({email: content.email}, function (err, docs) {
+    if(!docs){
+      res.send({"success":false,"status":400,"message":'invalid credentials',"data":content})
+    }
+    else{
+      if(!Bcrypt.compareSync(content.password, docs.password)){
+        res.send({"success":false,"status":400,"message":'invalid credentials',"data":content})  
+      }
+      
+      else{
+        
+        var token = jwt.sign({
+          id:docs._id,
+          email:docs.email,
+          firstName:docs.firstName,
+          lastName:docs.lastName
+        },config[1].s_key,{expiresIn: 12000});
+        res.send({"success":true,"status":200,"message":"token generated","data":token})
+      }
+     
+    }
+  })
+
+}
